@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Resume Analyzer - Result</title>
+
+    <!-- Bootstrap CSS (CDN) -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom mb-3">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-semibold" href="{{ url_for('main.index') }}">Resume Analyzer</a>
+    <span class="navbar-text small text-muted">
+      Analyze and visually compare a professional CV / resume
+    </span>
+  </div>
+</nav>
+
+<div class="container mb-5">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} py-2 mb-2">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Upload Resume Card -->
+    <div class="card mb-3">
+        <div class="card-header py-2">
+            <strong>Upload Resume</strong>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-2">
+                Supported formats: PDF, DOCX, TXT. Max size 5 MB.
+            </p>
+            <form action="{{ url_for('main.index') }}" method="post" enctype="multipart/form-data">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-8">
+                        <input type="file" name="resume" id="resume" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            Analyze
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <p class="small text-muted mt-2 mb-0">
+                Last analyzed file: <strong>{{ result.file_name }}</strong>
+            </p>
+        </div>
+    </div>
+
+    {% set adv = result.advanced %}
+
+    <!-- MAIN ROW: left = tables, right = highlighted resume -->
+    <div class="row">
+        <!-- LEFT COLUMN: Experience + Candidate Summary + Education -->
+        <div class="col-lg-7">
+
+            <!-- Experience History -->
+            <div class="card mb-3">
+                <div class="card-header py-2">
+                    <strong>Experience History</strong>
+                </div>
+                <div class="card-body">
+                    {% if adv.experience_history %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:50px;">#</th>
+                                        <th>Experience Entry (role / organization / details)</th>
+                                        <th style="width:110px;">Joining</th>
+                                        <th style="width:110px;">Relieving</th>
+                                        <th style="width:80px;">Years</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for exp in adv.experience_history %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>
+                                            {% if exp.title or exp.organization %}
+                                                <strong>{{ exp.title or '' }}</strong>
+                                                {% if exp.organization %} @ {{ exp.organization }}{% endif %}
+                                                {% if exp.location %} ({{ exp.location }}){% endif %}
+                                                {% if exp.description %}
+                                                    <br>
+                                                    <span class="small text-muted">{{ exp.description }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                {{ exp.raw_text }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ exp.start_date_str or '-' }}</td>
+                                        <td>{{ exp.end_date_str or '-' }}</td>
+                                        <td>
+                                            {% if exp.duration_months %}
+                                                {{ (exp.duration_months / 12.0) | round(1) }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No experience detected in this resume.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Candidate Summary -->
+            <div class="card mb-3">
+                <div class="card-header py-2">
+                    <strong>Candidate Summary</strong>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <tbody>
+                                <tr>
+                                    <th style="width:25%;">Name</th>
+                                    <td>{{ adv.name or 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email</th>
+                                    <td>{{ adv.email or 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>All Emails</th>
+                                    <td>
+                                        {% if adv.all_emails %}
+                                            {{ adv.all_emails | join(', ') }}
+                                        {% else %}Not parsed{% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Phone</th>
+                                    <td>{{ adv.phone or 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>All Phones</th>
+                                    <td>
+                                        {% if adv.all_phones %}
+                                            {{ adv.all_phones | join(', ') }}
+                                        {% else %}Not parsed{% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Current Location</th>
+                                    <td>{{ adv.current_location or 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Detected Indian States</th>
+                                    <td>
+                                        {% if adv.indian_states_found %}
+                                            {{ adv.indian_states_found | join(', ') }}
+                                        {% else %}Not parsed{% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Current Organization</th>
+                                    <td>{{ adv.current_organization or 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Current Role / Designation</th>
+                                    <td>{{ adv.current_role or 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Teaching Experience (years)</th>
+                                    <td>{{ adv.teaching_experience_years if adv.teaching_experience_years is not none else 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Industry Experience (years)</th>
+                                    <td>{{ adv.industry_experience_years if adv.industry_experience_years is not none else 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Other Experience (years)</th>
+                                    <td>{{ adv.other_experience_years if adv.other_experience_years is not none else 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Experience (years)</th>
+                                    <td>{{ adv.total_experience_years if adv.total_experience_years is not none else 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Highest Degree</th>
+                                    <td>{{ adv.highest_degree or 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Degrees Detected</th>
+                                    <td>
+                                        {% if adv.degrees_detected %}
+                                            {{ adv.degrees_detected | join(', ') }}
+                                        {% else %}Not parsed{% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Department</th>
+                                    <td>{{ adv.department or 'Not parsed' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Fields of Study</th>
+                                    <td>
+                                        {% if adv.fields_of_study %}
+                                            {{ adv.fields_of_study | join(', ') }}
+                                        {% else %}Not parsed{% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Publications (total)</th>
+                                    <td>{{ adv.publications_total_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Research Articles</th>
+                                    <td>{{ adv.research_articles_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Books / Chapters</th>
+                                    <td>{{ adv.books_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Conference Papers</th>
+                                    <td>{{ adv.conference_papers_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Score</th>
+                                    <td>{{ adv.score }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Education & Degrees -->
+            <div class="card mb-3">
+                <div class="card-header py-2">
+                    <strong>Education &amp; Degrees</strong>
+                </div>
+                <div class="card-body">
+                    {% if adv.degrees_info %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:50px;">#</th>
+                                        <th>Degree Type</th>
+                                        <th>Field of Study</th>
+                                        <th>Institution</th>
+                                        <th style="width:90px;">Start Year</th>
+                                        <th style="width:90px;">End Year</th>
+                                        <th style="width:90px;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for deg in adv.degrees_info %}
+                                    <tr>
+                                        <td>{{ loop.index }}</td>
+                                        <td>{{ deg.degree_type }}</td>
+                                        <td>{{ deg.field_of_study or '-' }}</td>
+                                        <td>{{ deg.institution or '-' }}</td>
+                                        <td>{{ deg.start_year or '-' }}</td>
+                                        <td>{{ deg.end_year or '-' }}</td>
+                                        <td>{{ deg.status or '-' }}</td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No education / degree information detected.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Resume Preview with Highlights -->
+        <div class="col-lg-5">
+            <div class="card mb-3">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <strong>Resume Preview (Highlighted)</strong>
+                    <span class="small text-muted">Side-by-side with extracted fields</span>
+                </div>
+                <div class="card-body">
+                    <div class="resume-preview border rounded p-2 small">
+                        <pre class="mb-0" style="white-space: pre-wrap;">{{ result.highlighted_text | safe }}</pre>
+                    </div>
+                    <p class="small text-muted mt-2 mb-0">
+                        <span class="legend-box bg-degree me-1"></span> Degree-related
+                        <span class="legend-box bg-exp ms-3 me-1"></span> Experience-related
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Raw JSON -->
+    <div class="card mb-3">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <strong>Raw JSON</strong>
+            <span class="small text-muted">Structured data extracted from resume</span>
+        </div>
+        <div class="card-body">
+            <textarea class="form-control form-control-sm font-monospace"
+                      rows="10" readonly>{{ json_result }}</textarea>
+        </div>
+    </div>
+
+    <!-- Extracted Text (plain) -->
+    <div class="card mb-3">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+            <strong>Extracted Text (Plain)</strong>
+            <span class="small text-muted">Without highlighting</span>
+        </div>
+        <div class="card-body">
+            <textarea class="form-control form-control-sm font-monospace"
+                      rows="10" readonly>{{ result.raw_text }}</textarea>
+        </div>
+    </div>
+
+</div>
+
+<!-- Bootstrap JS (optional) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

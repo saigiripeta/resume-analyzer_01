@@ -1,0 +1,46 @@
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.card-header {
+    background-color: #f7f7f7;
+}
+
+textarea {
+    resize: vertical;
+}
+
+/* Side-panel preview */
+.resume-preview {
+    max-height: 80vh;
+    overflow-y: auto;
+    background-color: #fdfdfd;
+}
+
+/* Highlight colors */
+mark.hl-degree {
+    background-color: #d4edda; /* light green */
+    padding: 0 1px;
+    border-radius: 2px;
+}
+
+mark.hl-exp {
+    background-color: #fff3cd; /* light yellow */
+    padding: 0 1px;
+    border-radius: 2px;
+}
+
+/* Legend boxes */
+.legend-box {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.bg-degree {
+    background-color: #d4edda;
+}
+.bg-exp {
+    background-color: #fff3cd;
+}
